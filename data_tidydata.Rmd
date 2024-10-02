@@ -1,0 +1,120 @@
+---
+title: "Tidy Data"
+output: github_document
+---
+
+```{r}
+library(tidyverse)
+```
+
+## Pivot Longer
+
+Load the PULSE data
+
+```{r}
+pulse_data = 
+  haven::read_sas("./data_import_examples/public_pulse_data.sas7bdat") %>% 
+  janitor::clean_names()
+```
+
+### Wide format to long format
+
+```{r}
+pulse_tidy_df = 
+  pivot_longer(
+    pulse_data, 
+    bdi_score_bl:bdi_score_12m,
+    names_to = "visit", 
+    names_prefix = "bdi_score",
+    values_to = "bdi")
+pulse_tidy_df
+```
+
+
+rewrite, combine, and mutate
+
+```{r}
+pulse_df = 
+  haven::read_sas("./data_import_examples/public_pulse_data.sas7bdat") |>
+  janitor::clean_names() |>
+  pivot_longer(
+    bdi_score_bl:bdi_score_12m,
+    names_to = "visit", 
+    names_prefix = "bdi_score_",
+    values_to = "bdi") |>
+  mutate(
+    visit = replace(visit, visit == "bl", "00m"),
+    visit = factor(visit)) 
+```
+
+# Binding Rows using LOTR data
+
+First Step: Import each data table
+
+```{r}
+fellowship_ring = 
+  readxl::read_excel("./data_import_examples/LotR_Words.xlsx", range = "B3:D6") |>
+  mutate(movie = "fellowship_ring")
+two_towers = 
+  readxl::read_excel("./data_import_examples/LotR_Words.xlsx", range = "F3:H6") |>
+  mutate(movie = "two_towers")
+return_king = 
+  readxl::read_excel("./data_import_examples/LotR_Words.xlsx", range = "J3:L6") |>
+  mutate(movie = "return_king")
+```
+
+Bind all the rows together
+
+```{r}
+lotr_tidy = 
+  bind_rows(fellowship_ring, two_towers, return_king) |>
+  janitor::clean_names() |>
+  relocate(movie)|>
+  pivot_longer(
+    female:male,
+    names_to = "gender", 
+    values_to = "words") |>
+  mutate(race = str_to_lower(race)) |> 
+  select(movie, everything()) 
+
+lotr_tidy
+```
+
+## Joining Data sets
+
+```{r}
+pup_df = 
+  read_csv(
+    "./data_import_examples/FAS_pups.csv",
+    na = c("NA", "", "."), show_col_types = FALSE) |>
+  janitor::clean_names() |>
+  mutate(
+    sex = 
+      case_match(
+        sex, 
+        1 ~ "male", 
+        2 ~ "female"),
+    sex = as.factor(sex)) 
+pup_df
+
+litter_df = 
+  read_csv(
+    "./data_import_examples/FAS_litters.csv",
+    na = c("NA", ".", ""),  show_col_types = FALSE) |>
+  janitor::clean_names() |>
+  separate(group, into = c("dose", "day_of_tx"), sep = 3) |>
+  relocate(litter_number) |>
+  mutate(
+    wt_gain = gd18_weight - gd0_weight,
+    dose = str_to_lower(dose))
+litter_df
+```
+
+```{r}
+fas_df = 
+  left_join(pup_df, litter_df, by = "litter_number") %>% 
+  arrange(litter_number) %>% 
+  relocate(litter_number, dose, day_of_tx)
+fas_df
+```
+
