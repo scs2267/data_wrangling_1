@@ -7,3 +7,79 @@ output: github_document
 library(tidyverse)
 ```
 
+## Load the FAS litters data
+```{r}
+litters_df = read_csv("./data_import_examples/FAS_litters.csv")
+litters_df = janitor::clean_names(litters_df)
+```
+
+## Select
+
+Choose some columns and not others
+
+```{r}
+select(litters_df, group, gd0_weight) #this selects the groups you want to keep and shows those
+```
+
+```{r}
+select(litters_df, group, gd0_weight:gd_of_birth) #this outputs columns between weight and birth
+```
+
+```{r}
+select(litters_df, -litter_number) #will keep everything except litter number
+```
+
+## Renaming Columns...
+
+```{r}
+select(litters_df, Group = group, Litternumber = litter_number)
+```
+
+```{r}
+rename(litters_df, Group = group, Litternumber = litter_number) #renames without deleting columns
+```
+
+## Select Helpers
+
+```{r}
+select(litters_df, starts_with("gd")) ## gives everything that starts with gd
+```
+
+```{r}
+relocate(litters_df, litter_number)
+```
+
+## filter
+
+```{r}
+filter(litters_df, gd0_weight < 22)
+```
+
+```{r}
+filter(litters_df, gd0_weight >= 22)
+```
+
+```{r}
+filter(litters_df, gd_of_birth == 20) #two equal signs is a test for equality
+```
+
+```{r}
+filter(litters_df, !(gd_of_birth == 20)) #! is for not 20
+```
+
+```{r}
+filter(litters_df, group %in% c("Con7","Mod8") ) #this is the or function
+```
+
+### With mutate you can create a new variable, or modify an existing variable
+
+## Piping %>%
+
+```{r}
+litters_data_raw = read.csv("./data_import_examples/FAS_litters.csv") %>%
+  janitor::clean_names() %>% 
+  select(-pups_survive) %>% 
+  drop_na(gd0_weight)
+```
+
+
